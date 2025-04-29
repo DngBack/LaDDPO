@@ -1,0 +1,35 @@
+# Default configuration for Diffusion-DPO training
+
+# Model Configuration
+model_name_or_path: "GSAI-ML/LLaDA-3B-Base" # Example: Using a 3B model for RTX 4080. Change as needed.
+
+# Data Configuration
+preference_data_path: "data/preference_data/reasoning_prefs.jsonl" # Path to your preference dataset
+max_length: 2048 # Maximum sequence length
+
+# Training Configuration
+output_dir: "diffusion_dpo_output" # Directory to save checkpoints and logs
+learning_rate: 5.0e-6
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16 # Effective batch size = batch_size * num_gpus * grad_accum
+num_train_epochs: 3
+max_train_steps: null # Set to override num_train_epochs
+lr_scheduler_type: "cosine" # e.g., linear, cosine
+num_warmup_steps: 100
+weight_decay: 0.01
+seed: 42
+
+# DPO Configuration
+beta: 0.1 # DPO beta parameter
+diffusion_steps: 20 # Number of steps for diffusion score calculation
+
+# Optimization Configuration (for RTX 4080)
+use_mixed_precision: "fp16" # Use "bf16" if supported and preferred, "no" to disable
+gradient_checkpointing: true # Enable gradient checkpointing to save memory
+
+# Logging and Saving
+save_steps: 500 # Save checkpoint every N steps
+logging_steps: 50 # Log metrics every N steps
+checkpointing_steps: "epoch" # Save checkpoints every N steps ('epoch' or integer)
+resume_from_checkpoint: null # Path to checkpoint to resume training
+
