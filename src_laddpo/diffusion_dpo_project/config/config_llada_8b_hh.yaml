@@ -1,0 +1,38 @@
+# Configuration for Diffusion-DPO training with LLaDA-8B-Instruct on Anthropic/hh-rlhf
+
+# Model Configuration
+model_name_or_path: "GSAI-ML/LLaDA-8B-Instruct" # HF identifier for the LLaDA model
+load_in_8bit: false # Set to true to load in 8-bit (requires bitsandbytes)
+load_in_4bit: false # Set to true to load in 4-bit (requires bitsandbytes)
+
+# Data Configuration
+dataset_name: "Anthropic/hh-rlhf" # HF identifier for the preference dataset
+dataset_split: "train" # Dataset split to use
+max_length: 1024 # Maximum sequence length (adjust based on VRAM)
+
+# Training Configuration
+output_dir: "llada_8b_dpo_hh_output" # Directory for checkpoints and logs
+learning_rate: 5.0e-7 # Low learning rate for fine-tuning large models
+per_device_train_batch_size: 1 # Keep batch size small due to model size
+gradient_accumulation_steps: 16 # Increase accumulation for larger effective batch size
+num_train_epochs: 1 # Number of training epochs
+max_train_steps: null # Set to a specific number to override epochs (e.g., 1000)
+lr_scheduler_type: "cosine" # Learning rate scheduler type
+num_warmup_steps: 100 # Number of warmup steps for the scheduler
+weight_decay: 0.01
+seed: 42
+
+# DPO Configuration
+beta: 0.1 # DPO beta parameter
+diffusion_samples: 16 # Number of Monte Carlo samples for diffusion score
+
+# Optimization Configuration
+use_mixed_precision: "bf16" # Use bfloat16 for efficiency (or fp16 if bf16 not supported)
+gradient_checkpointing: true # Enable gradient checkpointing to save memory
+
+# Logging and Saving
+save_steps: 500 # Save checkpoint every N steps
+logging_steps: 10 # Log metrics every N steps
+checkpointing_steps: null # Can set to integer or "epoch" for intermediate saves
+resume_from_checkpoint: null # Path to checkpoint to resume training
+

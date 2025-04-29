@@ -1,0 +1,4 @@
+[{"prompt": "Translate to French: Hello world", "chosen": " Bonjour le monde", "rejected": " Hola mundo"},
+ {"prompt": "What is 2+2?", "chosen": " 2+2 = 4", "rejected": " 2+2 = 5"},
+ {"prompt": "Capital of UK?", "chosen": " London", "rejected": " Paris"},
+ {"prompt": "Is the sky blue?", "chosen": " Yes, the sky is typically blue during the day.", "rejected": " No, the sky is green."}]
