@@ -9,6 +9,7 @@ load_in_4bit: true # Enable 4-bit quantization for maximum memory savings
 dataset_name: "Anthropic/hh-rlhf" # HF identifier for the preference dataset
 dataset_split: "train" # Dataset split to use
 max_length: 1024 # Further reduced sequence length to save memory
+random_sample_size: 50000 # Number of random samples to use from the dataset
 
 # Training Configuration
 output_dir: "llada_8b_dpo_hh_output" # Directory for checkpoints and logs

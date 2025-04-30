@@ -64,6 +64,12 @@ def parse_args():
         help="Dataset split to use (e.g., train)",
     )
     parser.add_argument(
+        "--random_sample_size",
+        type=int,
+        default=None,
+        help="Number of random samples to use from the dataset",
+    )
+    parser.add_argument(
         "--output_dir", type=str, help="Directory to save checkpoints and logs"
     )
     parser.add_argument(
@@ -221,37 +227,33 @@ def parse_args():
 
 
 def prepare_preference_dataloader(args, tokenizer, accelerator):
-    """Load and prepare the HH-RLHF dataset and dataloader."""
-    logger.info(
-        f"Loading preference dataset {args.dataset_name} split {args.dataset_split}"
-    )
-    try:
-        dataset = load_dataset(args.dataset_name, split=args.dataset_split)
-        # Filter out potentially problematic examples (e.g., very short)
-        dataset = dataset.filter(
-            lambda x: len(x["chosen"]) > 10 and len(x["rejected"]) > 10
-        )
-    except Exception as e:
-        logger.error(f"Failed to load dataset: {e}")
-        raise
+    """
+    Prepare the dataloader for preference data with random sampling if specified.
+    """
+    # Load the dataset
+    dataset = load_dataset(args.dataset_name, split=args.dataset_split)
 
-    # Simple collate function using prepare_hh_rlhf_batch
+    # Apply random sampling if specified
+    if args.random_sample_size is not None:
+        logger.info(
+            f"Randomly sampling {args.random_sample_size} examples from the dataset"
+        )
+        dataset = dataset.shuffle(seed=args.seed).select(range(args.random_sample_size))
+
     def collate_fn(batch_list):
         # Convert list of dicts to dict of lists
-        batch_dict = {
-            key: [item[key] for item in batch_list] for key in batch_list[0].keys()
-        }
-        # Prepare the batch using the utility function
-        return prepare_hh_rlhf_batch(
-            batch_dict, tokenizer, args.max_length, device="cpu"
-        )  # Prepare on CPU
+        batch = {k: [d[k] for d in batch_list] for k in batch_list[0]}
+        return prepare_hh_rlhf_batch(batch, tokenizer, max_length=args.max_length)
 
+    # Create dataloader
     dataloader = DataLoader(
         dataset,
         batch_size=args.per_device_train_batch_size,
         shuffle=True,
         collate_fn=collate_fn,
+        num_workers=4,
     )
+
     return dataloader
 
 
