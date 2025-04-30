@@ -79,3 +79,10 @@ echo "Running: $CMD"
 
 # Execute the command
 eval $CMD
+
+# Set PyTorch memory allocation configuration
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+# Run the training script
+cd src_laddpo
+python -m src.diffusion_dpo_train_llada --config_file config/config_llada_8b_hh.yaml
