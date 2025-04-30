@@ -3,6 +3,14 @@ Main training script for Diffusion-DPO fine-tuning with LLaDA-8B-Instruct.
 """
 
 import os
+import sys
+from pathlib import Path
+
+# Add the parent directory to Python path
+current_dir = Path(__file__).parent
+parent_dir = current_dir.parent
+sys.path.append(str(parent_dir))
+
 import torch
 import torch.nn.functional as F
 import argparse
@@ -18,11 +26,13 @@ from datasets import load_dataset
 from torch.utils.data import DataLoader
 from transformers import get_scheduler
 import copy
-import sys
-from pathlib import Path
+import multiprocessing
 
-# Import utility functions adapted for LLaDA
-from .utils_llada import (
+# Set multiprocessing start method to 'spawn' for CUDA compatibility
+multiprocessing.set_start_method("spawn", force=True)
+
+# Import utility functions adapted for LLaDA using absolute imports
+from src.utils_llada import (
     setup_logger,
     create_reference_model,
     compute_diffusion_score,
@@ -226,6 +236,17 @@ def parse_args():
     return args
 
 
+class CollateFn:
+    def __init__(self, tokenizer, max_length):
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+
+    def __call__(self, batch_list):
+        # Convert list of dicts to dict of lists
+        batch = {k: [d[k] for d in batch_list] for k in batch_list[0]}
+        return prepare_hh_rlhf_batch(batch, self.tokenizer, max_length=self.max_length)
+
+
 def prepare_preference_dataloader(args, tokenizer, accelerator):
     """
     Prepare the dataloader for preference data with random sampling if specified.
@@ -240,12 +261,8 @@ def prepare_preference_dataloader(args, tokenizer, accelerator):
         )
         dataset = dataset.shuffle(seed=args.seed).select(range(args.random_sample_size))
 
-    def collate_fn(batch_list):
-        # Convert list of dicts to dict of lists
-        batch = {k: [d[k] for d in batch_list] for k in batch_list[0]}
-        return prepare_hh_rlhf_batch(batch, tokenizer, max_length=args.max_length)
-
-    # Create dataloader
+    # Create dataloader with the class-based collate function
+    collate_fn = CollateFn(tokenizer, args.max_length)
     dataloader = DataLoader(
         dataset,
         batch_size=args.per_device_train_batch_size,
