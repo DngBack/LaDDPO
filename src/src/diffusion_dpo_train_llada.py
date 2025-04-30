@@ -332,7 +332,18 @@ def main():
             "weight_decay": args.weight_decay,
         },
     ]
-    optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=args.learning_rate)
+    try:
+        import bitsandbytes.optim as bnb_optim
+
+        optimizer = bnb_optim.AdamW8bit(
+            optimizer_grouped_parameters, lr=args.learning_rate, betas=(0.9, 0.995)
+        )  # Sử dụng betas thường được khuyến nghị cho 8bit
+        logger.info("Using 8-bit AdamW optimizer.")
+    except ImportError:
+        logger.warning("bitsandbytes not found. Falling back to standard AdamW.")
+        from torch.optim import AdamW
+
+        optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate)
 
     # Scheduler
     num_update_steps_per_epoch = math.ceil(

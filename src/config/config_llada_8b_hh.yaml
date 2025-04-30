@@ -8,14 +8,14 @@ load_in_4bit: true # Enable 4-bit quantization for maximum memory savings
 # Data Configuration
 dataset_name: "Anthropic/hh-rlhf" # HF identifier for the preference dataset
 dataset_split: "train" # Dataset split to use
-max_length: 1024 # Further reduced sequence length to save memory
-random_sample_size: 50000 # Number of random samples to use from the dataset
+max_length: 768 # Further reduced sequence length to save memory
+random_sample_size: 10000 # Number of random samples to use from the dataset
 
 # Training Configuration
 output_dir: "llada_8b_dpo_hh_output" # Directory for checkpoints and logs
 learning_rate: 5.0e-7 # Low learning rate for fine-tuning large models
 per_device_train_batch_size: 1 # Keep batch size at 1
-gradient_accumulation_steps: 64 # Increased accumulation for larger effective batch size
+gradient_accumulation_steps: 32 # Increased accumulation for larger effective batch size
 num_train_epochs: 1 # Number of training epochs
 max_train_steps: null # Set to a specific number to override epochs (e.g., 1000)
 lr_scheduler_type: "cosine" # Learning rate scheduler type
