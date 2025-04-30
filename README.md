@@ -1,11 +1,11 @@
-# LaDDPO
+# Diffusion-DPO for Large Language Diffusion Models
 
-This project provides code for fine-tuning Large Language Diffusion Models (LLDMs) using Direct Preference Optimization (DPO), specifically targeting reasoning tasks and optimized for environments.
+This project provides code for fine-tuning Large Language Diffusion Models (LLDMs) using Direct Preference Optimization (DPO), specifically targeting reasoning tasks and optimized for environments like an NVIDIA RTX 4080.
 
 ## Project Structure
 
 ```
-/home/ubuntu/diffusion_dpo_project/
+src/
 ├── config/
 │   └── config.yaml         # Default training configuration
 ├── data/
