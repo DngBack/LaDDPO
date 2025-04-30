@@ -8,7 +8,7 @@ load_in_4bit: true # Enable 4-bit quantization for maximum memory savings
 # Data Configuration
 dataset_name: "Anthropic/hh-rlhf" # HF identifier for the preference dataset
 dataset_split: "train" # Dataset split to use
-max_length: 768 # Further reduced sequence length to save memory
+max_length: 1024 # Further reduced sequence length to save memory
 random_sample_size: 10000 # Number of random samples to use from the dataset
 
 # Training Configuration
@@ -30,6 +30,7 @@ diffusion_samples: 4 # Further reduced number of Monte Carlo samples to save mem
 # Optimization Configuration
 use_mixed_precision: "fp16" # Use fp16 instead of bf16 for better memory efficiency
 gradient_checkpointing: true # Enable gradient checkpointing to save memory
+optimizer_type: "adamw_8bit"
 
 # Logging and Saving
 save_steps: 500 # Save checkpoint every N steps

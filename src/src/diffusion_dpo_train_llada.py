@@ -179,6 +179,12 @@ def parse_args():
         default=None,
         help="If the training should continue from a checkpoint folder.",
     )
+    parser.add_argument(
+        "--optimizer_type",
+        type=str,
+        default="adamw",
+        help="Optimizer type to use.",
+    )
 
     args = parser.parse_args()
 
@@ -325,25 +331,45 @@ def main():
     # Prepare dataset and dataloader
     train_dataloader = prepare_preference_dataloader(args, tokenizer, accelerator)
 
+    # >>> MODIFICATION: Implement 8-bit optimizer logic <<<
     # Optimizer
+    # Get only trainable parameters (only LoRA weights if PEFT is used)
+    trainable_params = [p for p in model.parameters() if p.requires_grad]
+    logger.info(
+        f"Number of trainable parameters: {sum(p.numel() for p in trainable_params)}"
+    )
+
     optimizer_grouped_parameters = [
         {
-            "params": [p for n, p in model.named_parameters() if p.requires_grad],
+            "params": trainable_params,
             "weight_decay": args.weight_decay,
         },
     ]
-    try:
-        import bitsandbytes.optim as bnb_optim
 
-        optimizer = bnb_optim.AdamW8bit(
-            optimizer_grouped_parameters, lr=args.learning_rate, betas=(0.9, 0.995)
-        )  # Sử dụng betas thường được khuyến nghị cho 8bit
-        logger.info("Using 8-bit AdamW optimizer.")
-    except ImportError:
-        logger.warning("bitsandbytes not found. Falling back to standard AdamW.")
+    optimizer = None
+    if args.optimizer_type.lower() == "adamw_8bit":
+        try:
+            import bitsandbytes.optim as bnb_optim
+
+            optimizer = bnb_optim.AdamW8bit(
+                optimizer_grouped_parameters,
+                lr=args.learning_rate,
+                betas=(0.9, 0.995),  # Recommended betas for 8-bit Adam
+            )
+            logger.info("Using 8-bit AdamW optimizer.")
+        except ImportError:
+            logger.warning(
+                "bitsandbytes not found, cannot use 8-bit AdamW. "
+                "Falling back to standard AdamW. Install bitsandbytes for memory efficiency."
+            )
+
+    # Fallback to standard AdamW if 8-bit is not requested or not available
+    if optimizer is None:
         from torch.optim import AdamW
 
         optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate)
+        logger.info("Using standard AdamW optimizer.")
+    # <<< END MODIFICATION >>>
 
     # Scheduler
     num_update_steps_per_epoch = math.ceil(
