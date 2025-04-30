@@ -1,0 +1,42 @@
+# Simplified Configuration for Single-GPU LaDDPO
+# Fine-tuning LLaDA-8B-Instruct on HH-RLHF
+
+# Model Arguments
+model_name_or_path: "GSAI-ML/LLaDA-8B-Instruct"
+load_in_8bit: false
+load_in_4bit: true       # Enable 4-bit quantization (Requires bitsandbytes)
+use_peft: true           # Enable PEFT (LoRA)
+
+# Data Arguments
+dataset_name: "Anthropic/hh-rlhf"
+dataset_split: "train"
+# random_sample_size: 5000 # Optional: Uncomment to use a smaller subset for debugging/testing
+max_length: 1024         # Max sequence length (Consider 768 or 512 if OOM persists)
+
+# Training Arguments
+output_dir: "./output/laddpo_simplified_single_gpu"
+learning_rate: 5.0e-7    # Initial learning rate (May need tuning)
+per_device_train_batch_size: 1 # Batch size per GPU (Keep at 1 for large models)
+gradient_accumulation_steps: 32 # Accumulate gradients over 32 steps (Effective batch size = 32)
+num_train_epochs: 1      # Number of training epochs
+max_train_steps: null    # Set to a specific number to limit training steps instead of epochs
+
+# DPO Arguments
+beta: 0.1                # DPO beta parameter
+diffusion_samples: 8     # Number of MC samples for diffusion score (Reduce if OOM persists, e.g., 4)
+
+# Optimization Arguments
+optimizer_type: "adamw_8bit" # Use 8-bit AdamW (Requires bitsandbytes)
+use_mixed_precision: "bf16"  # Use bfloat16 mixed precision (Good for H100/A100)
+gradient_checkpointing: true # Enable gradient checkpointing
+lr_scheduler_type: "cosine"  # Learning rate scheduler type
+num_warmup_steps: 100      # Number of warmup steps for the scheduler
+weight_decay: 0.0          # Weight decay
+
+# Logging and Saving
+save_steps: 500           # Save checkpoint every N steps
+logging_steps: 10          # Log metrics every N steps
+
+# Misc Arguments
+seed: 42                 # Random seed
+
