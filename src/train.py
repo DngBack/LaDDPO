@@ -108,7 +108,7 @@ def main():
         max_grad_norm=1.0,
         bf16=True,
         remove_unused_columns=False,
-        gradient_checkpointing=True,
+        gradient_checkpointing=False,
         logging_steps=10,
         save_steps=100,
         save_total_limit=3,
@@ -127,7 +127,7 @@ def main():
         beta_schedule="linear",
         beta_start=0.0001,
         beta_end=0.02,
-        tokenizer=tokenizer,  # Pass tokenizer directly
+        processing_class=tokenizer,
     )
 
     # Start training
