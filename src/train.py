@@ -84,9 +84,13 @@ def main():
         logging_steps=10,
         save_steps=100,
         save_total_limit=3,
-        evaluation_strategy="steps",
-        eval_steps=100,
-        load_best_model_at_end=True,
+        # evaluation_strategy="steps",
+        # eval_steps=100,
+        # load_best_model_at_end=True,
+        # evaluation_strategy="steps",
+        # save_strategy="steps",
+        # eval_steps=100,
+        # save_steps=100,
         report_to="wandb",  # Optional: for experiment tracking
     )
 
