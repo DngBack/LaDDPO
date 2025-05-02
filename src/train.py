@@ -3,16 +3,15 @@ import torch
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    TrainingArguments,
     set_seed,
 )
 from datasets import load_dataset
 from peft import LoraConfig, get_peft_model
 from trl import DPOConfig
 
-from src.trainer import LaDDPOTrainer
-from src.dataset import PreferenceDataset
-from src.collator import DiffusionPreferenceCollator
+from trainer import LaDDPOTrainer
+from dataset import PreferenceDataset
+from collator import DiffusionPreferenceCollator
 
 
 def main():
@@ -69,9 +68,11 @@ def main():
     # Prepare collator
     collator = DiffusionPreferenceCollator(tokenizer=tokenizer)
 
-    # Training arguments
-    training_args = TrainingArguments(
-        output_dir="./outputs",
+    # DPO configuration
+    dpo_config = DPOConfig(
+        beta=0.1,
+        max_length=1024,
+        max_prompt_length=512,
         per_device_train_batch_size=1,
         gradient_accumulation_steps=16,
         num_train_epochs=3,
@@ -84,27 +85,15 @@ def main():
         logging_steps=10,
         save_steps=100,
         save_total_limit=3,
-        # evaluation_strategy="steps",
-        # eval_steps=100,
-        # load_best_model_at_end=True,
-        # evaluation_strategy="steps",
-        # save_strategy="steps",
-        # eval_steps=100,
-        # save_steps=100,
-        report_to="wandb",  # Optional: for experiment tracking
+        output_dir="./outputs",
     )
 
-    # DPO configuration
-    dpo_config = DPOConfig(
-        beta=0.1,
-        max_length=1024,
-        max_prompt_length=512,
-    )
+    print("🚀 Starting training with LaDDPOTrainer...")
 
     # Initialize trainer
     trainer = LaDDPOTrainer(
         model=model,
-        args=training_args,
+        args=dpo_config,
         train_dataset=train_dataset,
         data_collator=collator,
         dpo_config=dpo_config,
