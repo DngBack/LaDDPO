@@ -9,11 +9,16 @@ class DiffusionPreferenceCollator(DefaultDataCollator):
     """
 
     def __init__(self, tokenizer, mask_token_id=None):
-        super().__init__(tokenizer=tokenizer, padding=True)
+        super().__init__()  # DefaultDataCollator doesn't take tokenizer parameter
+        self.tokenizer = tokenizer
+        # Use a default mask token ID if tokenizer doesn't have one
         self.mask_token_id = (
             tokenizer.mask_token_id
-            if tokenizer.mask_token_id is not None
-            else mask_token_id
+            if hasattr(tokenizer, "mask_token_id")
+            and tokenizer.mask_token_id is not None
+            else (
+                mask_token_id if mask_token_id is not None else tokenizer.pad_token_id
+            )
         )
 
     def forward_process(self, input_ids, eps=1e-3):
