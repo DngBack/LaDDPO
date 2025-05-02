@@ -96,23 +96,32 @@ class LaDDPOTrainer(DPOTrainer):
         model,
         inputs: Dict[str, Union[torch.Tensor, Dict[str, torch.Tensor]]],
         return_outputs: bool = False,
+        num_items_in_batch: Optional[int] = None,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict[str, torch.Tensor]]]:
         """
         Compute the DPO loss with diffusion-based scoring.
-        """
-        ch, rej = inputs["chosen"], inputs["rejected"]
 
-        # Get attention masks
-        chosen_attention_mask = torch.ones_like(ch["input_ids"])
-        rejected_attention_mask = torch.ones_like(rej["input_ids"])
+        Args:
+            model: The model to compute loss for
+            inputs: Dictionary containing chosen and rejected inputs
+            return_outputs: Whether to return additional outputs
+            num_items_in_batch: Number of items in the current batch (unused but required by base trainer)
+        """
+        # Extract inputs
+        chosen_input_ids = inputs["chosen_input_ids"]
+        chosen_attention_mask = inputs["chosen_attention_mask"]
+        chosen_labels = inputs["chosen_labels"]
+        rejected_input_ids = inputs["rejected_input_ids"]
+        rejected_attention_mask = inputs["rejected_attention_mask"]
+        rejected_labels = inputs["rejected_labels"]
 
         # Compute diffusion scores
         chosen_score = self.compute_diffusion_score(
-            model, ch["input_ids"], chosen_attention_mask, ch["labels"]
+            model, chosen_input_ids, chosen_attention_mask, chosen_labels
         )
 
         rejected_score = self.compute_diffusion_score(
-            model, rej["input_ids"], rejected_attention_mask, rej["labels"]
+            model, rejected_input_ids, rejected_attention_mask, rejected_labels
         )
 
         # Compute DPO loss

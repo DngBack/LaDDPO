@@ -38,14 +38,36 @@ def prepare_dpo_dataset(dataset, tokenizer):
             chosen_response = chosen
             rejected_response = rejected
 
+        # Tokenize the inputs
+        chosen_tokens = tokenizer(
+            prompt + chosen_response,
+            truncation=True,
+            max_length=1024,
+            padding="max_length",
+            return_tensors="pt",
+        )
+
+        rejected_tokens = tokenizer(
+            prompt + rejected_response,
+            truncation=True,
+            max_length=1024,
+            padding="max_length",
+            return_tensors="pt",
+        )
+
         return {
-            "prompt": prompt,
-            "chosen": chosen_response,
-            "rejected": rejected_response,
+            "chosen_input_ids": chosen_tokens["input_ids"][0],
+            "chosen_attention_mask": chosen_tokens["attention_mask"][0],
+            "chosen_labels": chosen_tokens["input_ids"][0].clone(),
+            "rejected_input_ids": rejected_tokens["input_ids"][0],
+            "rejected_attention_mask": rejected_tokens["attention_mask"][0],
+            "rejected_labels": rejected_tokens["input_ids"][0].clone(),
         }
 
     # Process the dataset
-    processed_dataset = dataset.map(process_example)
+    processed_dataset = dataset.map(
+        process_example, remove_columns=dataset.column_names
+    )
     return processed_dataset
 
 
