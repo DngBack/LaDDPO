@@ -5,13 +5,48 @@ from transformers import (
     AutoModelForCausalLM,
     set_seed,
 )
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from peft import LoraConfig, get_peft_model
 from trl import DPOConfig
+from trl.trainer.utils import DPODataCollatorWithPadding
 
 from trainer import LaDDPOTrainer
-from dataset import PreferenceDataset
-from collator import DiffusionPreferenceCollator
+
+
+def prepare_dpo_dataset(dataset, tokenizer):
+    """Prepare the dataset for DPO training."""
+
+    def process_example(example):
+        # Extract prompt from chosen response
+        chosen = example["chosen"]
+        rejected = example["rejected"]
+
+        # Find common prefix (prompt)
+        min_len = min(len(chosen), len(rejected))
+        prompt_end = 0
+        for i in range(min_len):
+            if chosen[i] != rejected[i]:
+                prompt_end = i
+                break
+
+        if prompt_end > 0:
+            prompt = chosen[:prompt_end]
+            chosen_response = chosen[prompt_end:]
+            rejected_response = rejected[prompt_end:]
+        else:
+            prompt = ""
+            chosen_response = chosen
+            rejected_response = rejected
+
+        return {
+            "prompt": prompt,
+            "chosen": chosen_response,
+            "rejected": rejected_response,
+        }
+
+    # Process the dataset
+    processed_dataset = dataset.map(process_example)
+    return processed_dataset
 
 
 def main():
@@ -19,7 +54,7 @@ def main():
     set_seed(42)
 
     # Load dataset
-    dataset = load_dataset("Anthropic/hh-rlhf", split="train")
+    raw_dataset = load_dataset("Anthropic/hh-rlhf", split="train")
 
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
@@ -57,16 +92,8 @@ def main():
     # Apply LoRA
     model = get_peft_model(base_model, lora_config)
 
-    # Prepare dataset
-    train_dataset = PreferenceDataset(
-        dataset=dataset,
-        tokenizer=tokenizer,
-        max_length=1024,
-        max_prompt_length=512,
-    )
-
-    # Prepare collator
-    collator = DiffusionPreferenceCollator(tokenizer=tokenizer)
+    # Prepare dataset for DPO training
+    train_dataset = prepare_dpo_dataset(raw_dataset, tokenizer)
 
     # DPO configuration
     dpo_config = DPOConfig(
@@ -95,12 +122,12 @@ def main():
         model=model,
         args=dpo_config,
         train_dataset=train_dataset,
-        data_collator=collator,
         dpo_config=dpo_config,
         diffusion_steps=20,
         beta_schedule="linear",
         beta_start=0.0001,
         beta_end=0.02,
+        tokenizer=tokenizer,  # Pass tokenizer directly
     )
 
     # Start training
