@@ -65,7 +65,7 @@ class LaDDPOTrainer(DPOTrainer):
 
         # Initialize with clean input
         x = input_ids.clone()
-        score = 0.0
+        score = torch.tensor(0.0, device=input_ids.device, requires_grad=True)
 
         # Run diffusion process
         for t in range(num_steps):
@@ -76,15 +76,45 @@ class LaDDPOTrainer(DPOTrainer):
             x_noisy = torch.sqrt(1 - beta_t) * x.float() + torch.sqrt(beta_t) * noise
 
             # Get model prediction
-            with torch.no_grad():
-                outputs = model(
-                    input_ids=x_noisy.long(),
-                    attention_mask=attention_mask,
-                    labels=labels,
-                )
+            outputs = model(
+                input_ids=x_noisy.long(),
+                attention_mask=attention_mask,
+                labels=labels,
+            )
+
+            # Extract loss from outputs
+            if isinstance(outputs, dict):
+                # Try different possible loss keys
+                if "loss" in outputs:
+                    loss = outputs["loss"]
+                elif "logits" in outputs:
+                    # Compute loss from logits if loss is not directly available
+                    logits = outputs["logits"]
+                    shift_logits = logits[..., :-1, :].contiguous()
+                    shift_labels = labels[..., 1:].contiguous()
+                    loss = F.cross_entropy(
+                        shift_logits.view(-1, shift_logits.size(-1)),
+                        shift_labels.view(-1),
+                    )
+                else:
+                    raise ValueError(f"Unexpected model outputs: {outputs.keys()}")
+            else:
+                # Handle case where outputs is not a dict
+                if hasattr(outputs, "loss"):
+                    loss = outputs.loss
+                elif hasattr(outputs, "logits"):
+                    logits = outputs.logits
+                    shift_logits = logits[..., :-1, :].contiguous()
+                    shift_labels = labels[..., 1:].contiguous()
+                    loss = F.cross_entropy(
+                        shift_logits.view(-1, shift_logits.size(-1)),
+                        shift_labels.view(-1),
+                    )
+                else:
+                    raise ValueError(f"Unexpected model output type: {type(outputs)}")
 
             # Update score
-            score = score + outputs.loss
+            score = score + loss
 
             # Update x for next step
             x = x_noisy.long()
@@ -110,10 +140,13 @@ class LaDDPOTrainer(DPOTrainer):
         # Extract inputs
         chosen_input_ids = inputs["chosen_input_ids"]
         chosen_attention_mask = inputs["chosen_attention_mask"]
-        chosen_labels = inputs["chosen_labels"]
+        # Create labels from input_ids if not provided
+        chosen_labels = inputs.get("chosen_labels", chosen_input_ids.clone())
+
         rejected_input_ids = inputs["rejected_input_ids"]
         rejected_attention_mask = inputs["rejected_attention_mask"]
-        rejected_labels = inputs["rejected_labels"]
+        # Create labels from input_ids if not provided
+        rejected_labels = inputs.get("rejected_labels", rejected_input_ids.clone())
 
         # Compute diffusion scores
         chosen_score = self.compute_diffusion_score(
