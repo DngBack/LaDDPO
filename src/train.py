@@ -56,6 +56,9 @@ def prepare_dpo_dataset(dataset, tokenizer):
         )
 
         return {
+            "prompt": prompt,
+            "chosen": chosen_response,
+            "rejected": rejected_response,
             "chosen_input_ids": chosen_tokens["input_ids"][0],
             "chosen_attention_mask": chosen_tokens["attention_mask"][0],
             "chosen_labels": chosen_tokens["input_ids"][0].clone(),
@@ -65,9 +68,7 @@ def prepare_dpo_dataset(dataset, tokenizer):
         }
 
     # Process the dataset
-    processed_dataset = dataset.map(
-        process_example, remove_columns=dataset.column_names
-    )
+    processed_dataset = dataset.map(process_example)
     return processed_dataset
 
 
