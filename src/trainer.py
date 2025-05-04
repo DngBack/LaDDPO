@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 from trl.trainer import DPOTrainer
 from typing import Dict, Optional, Tuple, Union
-import numpy as np
 
 
 class LaDDPOTrainer(DPOTrainer):

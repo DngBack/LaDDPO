@@ -1,14 +1,13 @@
-import os
 import torch
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     set_seed,
 )
-from datasets import load_dataset, Dataset
+from datasets import load_dataset
 from peft import LoraConfig, get_peft_model
 from trl import DPOConfig
-from trl.trainer.utils import DPODataCollatorWithPadding
+# from trl.trainer.utils import DPODataCollatorWithPadding
 
 from trainer import LaDDPOTrainer
 
@@ -93,15 +92,7 @@ def main():
         r=16,
         lora_alpha=32,
         lora_dropout=0.05,
-        target_modules=[
-            "q_proj",
-            "v_proj",
-            "k_proj",
-            "o_proj",
-            "gate_proj",
-            "up_proj",
-            "down_proj",
-        ],
+        target_modules=["q_proj", "k_proj", "v_proj"],
     )
 
     # Load base model
